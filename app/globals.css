@@ -1,0 +1,869 @@
+/* ============================================================
+   Conversor de Vídeo TV 1080p — visual premium inspirado no iOS
+   Mobile-first (iPhone/iPad), adaptado ao desktop.
+   Paleta neutra + uma única cor de destaque. Dark Mode elegante.
+   ============================================================ */
+
+:root {
+  --bg: #f2f2f7;
+  --card: #ffffff;
+  --ink: #1c1c1e;
+  --secondary: #6e6e73;
+  --tertiary: #aeaeb2;
+  --separator: #e5e5ea;
+  --fill: #f2f2f7;
+  --accent: #007aff;
+  --accent-pressed: #0062d6;
+  --accent-soft: rgba(0, 122, 255, 0.1);
+  --success: #34c759;
+  --success-soft: rgba(52, 199, 89, 0.12);
+  --warning-text: #7a4a00;
+  --warning-bg: #fef3d8;
+  --warning-border: #f0dcae;
+  --danger-text: #b3261e;
+  --danger-bg: #fdecea;
+  --danger-border: #f5c6c2;
+  --info-text: #0040a1;
+  --info-bg: #e8f1fe;
+  --info-border: #c9defc;
+  --radius: 20px;
+  --radius-sm: 14px;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.06);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #000000;
+    --card: #1c1c1e;
+    --ink: #f5f5f7;
+    --secondary: #a1a1a6;
+    --tertiary: #6e6e73;
+    --separator: #38383a;
+    --fill: #2c2c2e;
+    --accent: #0a84ff;
+    --accent-pressed: #3395ff;
+    --accent-soft: rgba(10, 132, 255, 0.16);
+    --success: #30d158;
+    --success-soft: rgba(48, 209, 88, 0.16);
+    --warning-text: #ffd60a;
+    --warning-bg: rgba(255, 214, 10, 0.1);
+    --warning-border: rgba(255, 214, 10, 0.25);
+    --danger-text: #ff6961;
+    --danger-bg: rgba(255, 69, 58, 0.12);
+    --danger-border: rgba(255, 69, 58, 0.3);
+    --info-text: #7fb3ff;
+    --info-bg: rgba(10, 132, 255, 0.14);
+    --info-border: rgba(10, 132, 255, 0.3);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.4);
+    color-scheme: dark;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  -webkit-tap-highlight-color: transparent;
+  /* Respeita notch / Dynamic Island / home indicator */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* ---------- Estrutura ---------- */
+
+.page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 16px calc(28px + env(safe-area-inset-bottom));
+}
+
+.container {
+  width: 100%;
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ---------- Cabeçalho estilo app ---------- */
+
+.hero {
+  text-align: center;
+  padding: 14px 12px 2px;
+}
+
+.app-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 14px;
+  box-shadow: var(--shadow);
+}
+
+.hero-eyebrow {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--secondary);
+}
+
+.hero h1 {
+  margin: 0;
+  font-size: clamp(26px, 6vw, 32px);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+}
+
+.hero-sub {
+  margin: 10px auto 0;
+  max-width: 38ch;
+  color: var(--secondary);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+/* ---------- Cartões ---------- */
+
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px;
+  border: 0.5px solid var(--separator);
+}
+
+@media (min-width: 560px) {
+  .card {
+    padding: 24px;
+  }
+}
+
+/* ---------- Upload (touch-first) ---------- */
+
+.dropzone {
+  border-radius: var(--radius-sm);
+  background: var(--fill);
+  padding: 36px 20px 30px;
+  text-align: center;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  transition: background 0.15s ease, transform 0.15s ease;
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+.dropzone:hover {
+  background: var(--accent-soft);
+}
+
+.dropzone:focus-visible {
+  box-shadow: 0 0 0 3px var(--accent-soft), 0 0 0 5px var(--accent);
+}
+
+.dropzone.dragging {
+  background: var(--accent-soft);
+  transform: scale(0.995);
+}
+
+.plus-circle {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 30px;
+  font-weight: 300;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.dropzone-title {
+  font-size: 19px;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.dropzone-sub {
+  margin: 6px 0 0;
+  color: var(--secondary);
+  font-size: 14px;
+  line-height: 1.5;
+  max-width: 30ch;
+}
+
+.dropzone-drag-hint {
+  display: none;
+  margin: 10px 0 0;
+  color: var(--tertiary);
+  font-size: 13px;
+}
+
+/* Drag & drop só faz sentido com mouse — mostra a dica no desktop */
+@media (hover: hover) and (pointer: fine) {
+  .dropzone-drag-hint {
+    display: block;
+  }
+}
+
+.hint {
+  margin: 12px 2px 0;
+  font-size: 13px;
+  color: var(--secondary);
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* ---------- Botões (alvos grandes de toque) ---------- */
+
+.btn {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  min-height: 54px;
+  padding: 15px 20px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  touch-action: manipulation;
+  transition: background 0.15s ease, opacity 0.15s ease, transform 0.1s ease;
+  text-decoration: none;
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.98);
+  opacity: 0.85;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-pressed);
+}
+
+.btn-secondary-ios {
+  background: var(--fill);
+  color: var(--accent);
+}
+
+.btn-secondary-ios:hover:not(:disabled) {
+  background: var(--accent-soft);
+}
+
+.btn-plain {
+  background: transparent;
+  color: var(--accent);
+  min-height: 48px;
+  width: auto;
+  padding: 12px 16px;
+  font-size: 16px;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ---------- Arquivo selecionado ---------- */
+
+.file-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  background: var(--fill);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+}
+
+.file-thumb {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.file-meta {
+  min-width: 0;
+  flex: 1;
+}
+
+.file-name {
+  font-weight: 600;
+  font-size: 15px;
+  word-break: break-all;
+  margin: 0 0 2px;
+  line-height: 1.35;
+}
+
+.file-size {
+  margin: 0;
+  color: var(--secondary);
+  font-size: 13px;
+}
+
+.file-remove {
+  flex-shrink: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 12px 8px;
+  border-radius: 10px;
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
+.file-remove:active {
+  opacity: 0.6;
+}
+
+video.preview {
+  width: 100%;
+  max-height: 300px;
+  border-radius: var(--radius-sm);
+  background: #000;
+  margin-top: 12px;
+  display: block;
+}
+
+.preview-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 4px 0 2px;
+}
+
+.preview-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 0 2px;
+}
+
+.preview-heading strong {
+  font-size: 15px;
+}
+
+.preview-heading span {
+  color: var(--secondary);
+  font-size: 12.5px;
+}
+
+video.preview-final {
+  max-height: 420px;
+  margin-top: 4px;
+}
+
+/* ---------- Avisos ---------- */
+
+.status {
+  border-radius: var(--radius-sm);
+  padding: 13px 15px;
+  font-size: 14.5px;
+  line-height: 1.55;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  border: 0.5px solid transparent;
+}
+
+.status-info {
+  background: var(--info-bg);
+  color: var(--info-text);
+  border-color: var(--info-border);
+}
+
+.status-success {
+  background: var(--success-soft);
+  color: var(--success);
+  border-color: transparent;
+}
+
+.status-warn {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  border-color: var(--warning-border);
+}
+
+.status-error {
+  background: var(--danger-bg);
+  color: var(--danger-text);
+  border-color: var(--danger-border);
+}
+
+/* ---------- Conversão (tela simples e calma) ---------- */
+
+.converting {
+  text-align: center;
+  padding: 18px 4px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.converting-title {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.converting-pct {
+  margin: 10px 0 0;
+  font-size: 52px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--ink);
+}
+
+.progress-track {
+  margin-top: 18px;
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--separator);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: var(--accent);
+  transition: width 0.25s ease;
+}
+
+.conversion-progress {
+  padding: 8px 0 2px;
+}
+
+.progress-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.progress-percent {
+  display: inline-block;
+  font-size: 38px;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.progress-label {
+  margin-left: 8px;
+  color: var(--secondary);
+  font-size: 14px;
+}
+
+.progress-fps {
+  color: var(--secondary);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  padding-bottom: 3px;
+}
+
+.progress-track-large {
+  width: 100%;
+  height: 22px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--separator);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+}
+
+.progress-fill-large {
+  position: relative;
+  height: 100%;
+  min-width: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 7px;
+  box-shadow: 0 1px 4px rgba(0, 122, 255, 0.35);
+  transition: width 0.25s ease;
+  overflow: hidden;
+}
+
+.progress-fill-large::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    110deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.18) 45%,
+    transparent 70%
+  );
+  transform: translateX(-100%);
+  animation: progress-shine 1.8s linear infinite;
+}
+
+.progress-fill-large span {
+  position: relative;
+  z-index: 1;
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes progress-shine {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.progress-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.progress-stats span {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 8px;
+  border-radius: 12px;
+  background: var(--fill);
+  color: var(--secondary);
+  text-align: center;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.progress-stats strong {
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.conversion-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 18px 0 20px;
+}
+
+.conversion-summary span {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 11px 8px;
+  border-radius: 12px;
+  background: var(--fill);
+  color: var(--ink);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.conversion-summary strong {
+  color: var(--secondary);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.conversion-summary-final {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+@media (max-width: 700px) {
+  .conversion-summary-final {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 430px) {
+  .progress-stats,
+  .conversion-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .progress-stats span,
+  .conversion-summary span {
+    flex-direction: row;
+    justify-content: space-between;
+    text-align: left;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress-fill-large::after {
+    animation: none;
+  }
+}
+
+.progress-note {
+  color: var(--secondary);
+  font-size: 14px;
+  line-height: 1.65;
+  margin: 16px 0 0;
+  max-width: 34ch;
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2.5px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+  animation: spin 0.9s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- Conclusão ---------- */
+
+.result {
+  text-align: center;
+  padding: 14px 2px 2px;
+}
+
+.result-check {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: var(--success-soft);
+  color: var(--success);
+  font-size: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 14px;
+}
+
+.result h2 {
+  margin: 0 0 8px;
+  font-size: 24px;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+}
+
+.result p {
+  margin: 0 auto 20px;
+  color: var(--secondary);
+  font-size: 15px;
+  line-height: 1.6;
+  max-width: 34ch;
+}
+
+.result-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.result-file {
+  margin: 14px 0 0;
+  font-size: 13px;
+  color: var(--secondary);
+}
+
+.result-file code {
+  background: var(--fill);
+  border: 0.5px solid var(--separator);
+  padding: 3px 9px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+/* ---------- Como usar ---------- */
+
+.howto details {
+  background: var(--card);
+  border: 0.5px solid var(--separator);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.howto summary {
+  cursor: pointer;
+  padding: 15px 18px;
+  font-weight: 600;
+  font-size: 15px;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  touch-action: manipulation;
+}
+
+.howto summary::-webkit-details-marker {
+  display: none;
+}
+
+.howto ol {
+  margin: 0;
+  padding: 2px 20px 18px 44px;
+  color: var(--secondary);
+  font-size: 14.5px;
+  line-height: 2;
+}
+
+.howto li::marker {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* ---------- Privacidade / rodapé ---------- */
+
+.privacy {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  justify-content: center;
+  color: var(--secondary);
+  font-size: 13px;
+  line-height: 1.6;
+  text-align: center;
+  max-width: 40ch;
+  margin: 2px auto 0;
+  padding: 0 8px;
+}
+
+.privacy strong {
+  color: var(--ink);
+}
+
+.footer {
+  color: var(--tertiary);
+  font-size: 12px;
+  text-align: center;
+  line-height: 1.6;
+  padding: 2px 12px 0;
+}
+
+/* ---------- Detalhes técnicos (diagnóstico recolhível) ---------- */
+
+.debug {
+  margin-top: 4px;
+  background: var(--fill);
+  border-radius: var(--radius-sm);
+  padding: 4px 14px;
+  font-size: 12.5px;
+  color: var(--secondary);
+}
+
+.debug summary {
+  cursor: pointer;
+  padding: 10px 0;
+  font-weight: 600;
+  font-size: 13px;
+  min-height: 40px;
+  touch-action: manipulation;
+}
+
+.debug ul {
+  margin: 0 0 6px;
+  padding-left: 18px;
+  line-height: 1.7;
+  word-break: break-all;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 12px;
+}
+
+.debug p {
+  margin: 0 0 10px;
+  font-size: 12px;
+}
+
+/* ---------- Acessibilidade ---------- */
+
+:focus-visible {
+  outline: 3px solid var(--accent-soft);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .progress-fill {
+    transition: none;
+  }
+}

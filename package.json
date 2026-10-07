@@ -1,0 +1,29 @@
+{
+  "name": "conversor-video-tv1080p",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --webpack",
+    "build": "npm run copy:ffmpeg && next build --webpack",
+    "start": "next start",
+    "lint": "tsc --noEmit",
+    "postinstall": "npm run copy:ffmpeg",
+    "copy:ffmpeg": "node scripts/copy-ffmpeg-core.mjs"
+  },
+  "dependencies": {
+    "@ffmpeg/core": "^0.12.10",
+    "@ffmpeg/core-mt": "^0.12.10",
+    "@ffmpeg/ffmpeg": "^0.12.15",
+    "@ffmpeg/util": "^0.12.2",
+    "next": "^16.4.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "typescript": "~5.9.3"
+  }
+}
