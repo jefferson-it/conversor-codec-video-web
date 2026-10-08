@@ -208,7 +208,7 @@ export async function POST(request: Request) {
     });
     await writer.close();
 
-    await del(pathname, { access: "private" }).catch(() => undefined);
+    await del(pathname).catch(() => undefined);
 
     return await responsePromise;
   } catch (error) {
