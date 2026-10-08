@@ -3,8 +3,16 @@
 
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 
+export const runtime = "nodejs";
+
 export async function POST(request: Request) {
   try {
+    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      return Response.json(
+        { error: "Vercel Blob não está configurado: BLOB_READ_WRITE_TOKEN ausente." },
+        { status: 500 },
+      );
+    }
     const body = (await request.json()) as HandleUploadBody;
 
     const response = await handleUpload({
