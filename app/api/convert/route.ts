@@ -4,11 +4,13 @@ import { createReadStream, createWriteStream } from "node:fs";
 import { mkdir, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+
+const ffmpegPath = join(process.cwd(), "node_modules/ffmpeg-static/ffmpeg");
 import { randomUUID } from "node:crypto";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { spawn } from "node:child_process";
-import ffmpegPath from "ffmpeg-static";
+
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
