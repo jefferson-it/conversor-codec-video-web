@@ -41,7 +41,7 @@ export async function POST(request: Request) {
     const token = await issueSignedToken({
       pathname,
       operations: ["put"],
-      allowedContentTypes: ["video/*"],
+      allowedContentTypes: [contentType],
       maximumSizeInBytes: 500 * 1024 * 1024,
       validUntil,
     });
