@@ -80,14 +80,11 @@ export async function convertInput(
       if (bitrate && currentSeconds != null) estimatedMegabytes = Number(bitrate) * 1000 * currentSeconds / 8 / (1024 * 1024);
       if (fps || currentSeconds != null || bitrate) {
         const elapsedSeconds = (performance.now() - startedAt) / 1000;
-        const speed =
-          currentSeconds != null && elapsedSeconds > 0
-            ? currentSeconds / elapsedSeconds
-            : undefined;
+        const speed = durationSeconds && elapsedSeconds > 0 ? durationSeconds / elapsedSeconds : undefined;
         const percent =
           currentSeconds != null && durationSeconds
-            ? Math.min(97, Math.max(2, Math.round(currentSeconds / durationSeconds * 100)))
-            : 2;
+            ? Math.min(97, Math.round(currentSeconds / durationSeconds * 100))
+            : 0;
         onProgress?.({
           percent,
           fps,
