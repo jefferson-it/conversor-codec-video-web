@@ -110,6 +110,7 @@ export async function POST(request: Request) {
     // o objeto diretamente do storage. Isso evita depender de uma consulta
     // autenticada ao índice do Blob logo após o upload.
     let sourceResponse: Response | null = null;
+    let lastSourceStatus: number | null = null;
 
     for (let attempt = 0; attempt < 6 && !sourceResponse; attempt += 1) {
       const token = await issueSignedToken({
@@ -121,12 +122,15 @@ export async function POST(request: Request) {
         pathname,
         operation: "get",
         access: "private",
+        useCache: false,
         validUntil: Date.now() + 5 * 60 * 1000,
       });
 
       const candidate = await fetch(presignedUrl, {
         cache: "no-store",
       });
+
+      lastSourceStatus = candidate.status;
 
       if (candidate.ok) {
         sourceResponse = candidate;
@@ -137,7 +141,7 @@ export async function POST(request: Request) {
 
     if (!sourceResponse?.body) {
       return Response.json(
-        { error: "Vídeo enviado não foi encontrado no armazenamento após aguardar a sincronização." },
+        { error: `Vídeo enviado não pôde ser lido pelo armazenamento (HTTP ${lastSourceStatus ?? "desconhecido"}).` },
         { status: 404 },
       );
     }
