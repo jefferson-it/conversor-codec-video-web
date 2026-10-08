@@ -1,5 +1,5 @@
 
-import { get, issueSignedToken, presignUrl, put, del } from "@vercel/blob";
+import { issueSignedToken, presignUrl, put, del } from "@vercel/blob";
 import { createReadStream, createWriteStream } from "node:fs";
 import { mkdir, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -105,19 +105,39 @@ export async function POST(request: Request) {
       return Response.json({ error: "Arquivo de entrada inválido." }, { status: 400 });
     }
 
-    let source: Awaited<ReturnType<typeof get>> = null;
+    // O navegador fez o upload por uma URL PUT assinada. Para ler um Blob
+    // privado de forma determinística, gere aqui uma URL GET assinada e baixe
+    // o objeto diretamente do storage. Isso evita depender de uma consulta
+    // autenticada ao índice do Blob logo após o upload.
+    let sourceResponse: Response | null = null;
+    let sourceUrl = "";
 
-    // A gravação por URL assinada vai direto do navegador para o Blob.
-    // Faça algumas tentativas antes de declarar o objeto ausente, para cobrir
-    // uma eventual latência momentânea entre a escrita e a leitura.
-    for (let attempt = 0; attempt < 6 && !source; attempt += 1) {
-      source = await get(pathname, { access: "private", useCache: false });
-      if (!source && attempt < 5) {
+    for (let attempt = 0; attempt < 6 && !sourceResponse; attempt += 1) {
+      const token = await issueSignedToken({
+        pathname,
+        operations: ["get"],
+        validUntil: Date.now() + 5 * 60 * 1000,
+      });
+      const { presignedUrl } = await presignUrl(token, {
+        pathname,
+        operation: "get",
+        access: "private",
+        validUntil: Date.now() + 5 * 60 * 1000,
+      });
+
+      const candidate = await fetch(presignedUrl, {
+        cache: "no-store",
+      });
+
+      if (candidate.ok) {
+        sourceResponse = candidate;
+        sourceUrl = presignedUrl;
+      } else if (attempt < 5) {
         await new Promise((resolve) => setTimeout(resolve, 1000));
       }
     }
 
-    if (!source) {
+    if (!sourceResponse?.body) {
       return Response.json(
         { error: "Vídeo enviado não foi encontrado no armazenamento após aguardar a sincronização." },
         { status: 404 },
@@ -131,7 +151,7 @@ export async function POST(request: Request) {
     const outputPath = join(tempDir, "saida_TV1080P.mp4");
 
     await pipeline(
-      Readable.fromWeb(source.stream as Parameters<typeof Readable.fromWeb>[0]),
+      Readable.fromWeb(sourceResponse.body as Parameters<typeof Readable.fromWeb>[0]),
       createWriteStream(inputPath),
     );
 
