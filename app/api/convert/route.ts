@@ -1,5 +1,5 @@
 
-import { get, put, del, issueSignedToken, presignUrl } from "@vercel/blob";
+import { get, put, del } from "@vercel/blob";
 import { createReadStream, createWriteStream } from "node:fs";
 import { mkdir, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -199,23 +199,12 @@ export async function POST(request: Request) {
       addRandomSuffix: false,
     });
 
-    const token = await issueSignedToken({
-      pathname: outputBlob.pathname,
-      operations: ["get"],
-    });
-    const signed = await presignUrl(token, {
-      pathname: outputBlob.pathname,
-      operation: "get",
-      access: "private",
-      validUntil: Date.now() + 30 * 60 * 1000,
-    });
-
     send({
       type: "done",
       percent: 100,
       outputBytes: outputInfo.size,
       fileName: outputName,
-      previewUrl: signed.presignedUrl,
+      previewUrl: "/api/blob/download?pathname=" + encodeURIComponent(outputBlob.pathname),
     });
     await writer.close();
 
