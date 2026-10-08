@@ -1,7 +1,6 @@
 
 "use client";
 
-import { upload } from "@vercel/blob/client";
 import type { RuntimeInput, RuntimeProgress, RuntimeResult } from "./runtime-types";
 import { convertVideoForTV1080p } from "./ffmpeg";
 
@@ -118,23 +117,48 @@ export async function convertInputInternal(
 
   onProgress?.({ percent: 2, durationSeconds: durationSeconds ?? undefined, elapsedSeconds: 0 });
 
-  const uploaded = await upload(
-    `video-converter/input/${Date.now()}-${input.name}`,
-    input.file,
-    {
-      access: "private",
-      handleUploadUrl: "/api/blob/upload",
-      multipart: true,
-      onUploadProgress(event) {
-        const elapsedSeconds = (performance.now() - startedAt) / 1000;
-        onProgress?.({
-          percent: Math.min(10, Math.max(2, Math.round(event.percentage / 10))),
-          durationSeconds: durationSeconds ?? undefined,
-          elapsedSeconds,
-        });
-      },
-    },
-  );
+  const uploadPreparationResponse = await fetch("/api/blob/upload", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: input.name,
+      contentType: input.file.type || "video/mp4",
+      sizeBytes: input.file.size,
+    }),
+  });
+
+  if (!uploadPreparationResponse.ok) {
+    let message = "Não foi possível preparar o upload do vídeo.";
+    try {
+      const data = await uploadPreparationResponse.json();
+      if (typeof data?.error === "string") message = data.error;
+    } catch {
+      /* resposta não-JSON */
+    }
+    throw new Error(message);
+  }
+
+  const uploadTarget = (await uploadPreparationResponse.json()) as {
+    pathname?: string;
+    presignedUrl?: string;
+  };
+
+  if (!uploadTarget.pathname || !uploadTarget.presignedUrl) {
+    throw new Error("A Vercel não retornou uma URL de upload válida.");
+  }
+
+  const uploadResponse = await fetch(uploadTarget.presignedUrl, {
+    method: "PUT",
+    headers: { "Content-Type": input.file.type || "video/mp4" },
+    body: input.file,
+  });
+
+  if (!uploadResponse.ok) {
+    const detail = await uploadResponse.text().catch(() => "");
+    throw new Error(
+      detail || `Upload para o Vercel Blob falhou (HTTP ${uploadResponse.status}).`,
+    );
+  }
 
   onProgress?.({ percent: 10, durationSeconds: durationSeconds ?? undefined });
 
