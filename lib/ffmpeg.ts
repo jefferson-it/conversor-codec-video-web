@@ -140,10 +140,15 @@ function isIOSWebKit(): boolean {
 }
 
 function supportsMT(): boolean {
-  // Safari/iOS é deliberadamente mantido em single-thread: mesmo quando
-  // SharedArrayBuffer/crossOriginIsolated aparece disponível, o custo de
-  // memória e as limitações do WebKit tornam o core-mt menos previsível.
-  return !isIOSWebKit() && isPageIsolated();
+  // O core-mt fica DESATIVADO por padrão. Há casos conhecidos em Chromium
+  // onde exec() trava durante filtros/resize, enquanto o core single-thread
+  // funciona normalmente. Para testar MT explicitamente, use ?motor=mt.
+  if (isIOSWebKit() || !isPageIsolated()) return false;
+  try {
+    return new URLSearchParams(window.location.search).get("motor") === "mt";
+  } catch {
+    return false;
+  }
 }
 
 /** `?motor=st` na URL força single-thread (útil se o MT travar na máquina). */
