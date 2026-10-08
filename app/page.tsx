@@ -1,7 +1,9 @@
+[Reading 292 lines from start (total: 292 lines, 0 remaining)]
+
 "use client";
 
 import { useEffect, useState } from "react";
-import { downloadWebResult, convertInput, getRuntime, pickInput, runtimeLabel } from "@/lib/runtime";
+import { downloadWebResult, convertInput, convertInputInternal, getRuntime, pickInput, runtimeLabel } from "@/lib/runtime";
 import type { RuntimeInput, RuntimeProgress, RuntimeResult } from "@/lib/runtime";
 
 type Phase = "idle" | "ready" | "working" | "done";
@@ -40,6 +42,7 @@ function formatSizeDelta(inputBytes: number, outputBytes: number): string {
 
 export default function Home() {
   const [runtime, setRuntime] = useState<"desktop" | "web" | null>(null);
+  const [mode, setMode] = useState<"device" | "internal">("device");
   const [phase, setPhase] = useState<Phase>("idle");
   const [input, setInput] = useState<RuntimeInput | null>(null);
   const [result, setResult] = useState<RuntimeResult | null>(null);
@@ -90,8 +93,8 @@ export default function Home() {
       setEtaSeconds(null);
       setFps(null);
       setPhase("ready");
-      setInfo(runtime === "desktop"
-        ? "Vídeo selecionado. Ao converter, você escolherá onde salvar o MP4."
+      setInfo(mode === "internal"
+        ? "Vídeo selecionado. Ao converter, ele será enviado temporariamente para a Vercel."
         : "Vídeo selecionado. A conversão acontece neste dispositivo; ao terminar, o MP4 ficará disponível para baixar.");
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -112,11 +115,13 @@ export default function Home() {
       setFps(null);
       setDurationSeconds(null);
       setStartedAt(Date.now());
-      setInfo(runtime === "desktop"
-        ? "FFmpeg nativo está convertendo diretamente no computador…"
+      setInfo(mode === "internal"
+        ? "FFmpeg nativo da Vercel está convertendo o vídeo no servidor…"
         : "FFmpeg.wasm está convertendo localmente no navegador…");
 
-      const converted = await convertInput(input, handleProgress);
+      const converted = mode === "internal"
+        ? await convertInputInternal(input, handleProgress)
+        : await convertInput(input, handleProgress);
       setResult(converted);
       setProgress(100);
       setElapsedSeconds(converted.elapsedSeconds);
@@ -167,7 +172,38 @@ export default function Home() {
         </header>
 
         <section className="card" aria-label="Conversor de vídeo">
-          {phase === "idle" && <button className="btn btn-primary" onClick={chooseVideo}>Escolher vídeo</button>}
+          {phase === "idle" && (
+            <>
+              <div className="mode-selector" role="group" aria-label="Modo de conversão">
+                <button
+                  type="button"
+                  className={`mode-option${mode === "device" ? " selected" : ""}`}
+                  onClick={() => setMode("device")}
+                  aria-pressed={mode === "device"}
+                >
+                  <strong>Usando recurso do aparelho</strong>
+                  <span>Mais privacidade · processamento local</span>
+                </button>
+                <button
+                  type="button"
+                  className={`mode-option${mode === "internal" ? " selected" : ""}`}
+                  onClick={() => setMode("internal")}
+                  aria-pressed={mode === "internal"}
+                >
+                  <strong>Interno (Vercel)</strong>
+                  <span>Processamento no servidor</span>
+                </button>
+              </div>
+
+              {mode === "internal" && (
+                <div className="internal-warning" role="alert">
+                  <strong>⚠️ Atenção:</strong> o vídeo será enviado para a Vercel para ser convertido. Em alguns casos, o processamento interno pode cair ou ser interrompido por limites de tempo, memória ou uso do servidor.
+                </div>
+              )}
+
+              <button className="btn btn-primary" onClick={chooseVideo}>Escolher vídeo</button>
+            </>
+          )}
 
           {input && phase !== "idle" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -175,7 +211,7 @@ export default function Home() {
 
               {phase === "ready" && (
                 <>
-                  <p className="hint">{desktop ? "Ao iniciar, o aplicativo perguntará onde salvar o MP4 e gravará diretamente no disco." : "Ao iniciar, o vídeo será processado no navegador sem ser enviado para servidor. No final, aparecerá o botão Baixar vídeo."}</p>
+                  <p className="hint">{mode === "internal" ? "Ao iniciar, o vídeo será enviado para a Vercel e convertido com FFmpeg nativo. No final, o MP4 ficará disponível para baixar." : "Ao iniciar, o vídeo será processado no navegador sem ser enviado para servidor. No final, aparecerá o botão Baixar vídeo."}</p>
                   <button className="btn btn-primary" onClick={convert}>Converter vídeo</button>
                 </>
               )}
@@ -195,7 +231,7 @@ export default function Home() {
                     {speed != null && <span><strong>Velocidade</strong> {speed.toFixed(2).replace(".", ",")}×</span>}
                     <span><strong>Saída</strong> {outputMegabytes > 0 ? formatSize(outputMegabytes * 1024 * 1024) : "calculando…"}</span>
                   </div>
-                  <div className="status status-info"><span><strong>Motor:</strong> {runtimeLabel()} · {desktop ? "arquivo sendo gravado diretamente no disco" : "processamento local no navegador"}</span></div>
+                  <div className="status status-info"><span><strong>Motor:</strong> {mode === "internal" ? "FFmpeg nativo · Vercel" : runtimeLabel()} · {mode === "internal" ? "processamento interno no servidor" : "processamento local no navegador"}</span></div>
                   {durationSeconds != null && <p className="progress-note">Vídeo de {formatDuration(durationSeconds)} · tempo real de processamento atualizado ao vivo.</p>}
                   <p className="hint">Não feche o aplicativo ou aba durante a conversão.</p>
                 </div>
@@ -206,7 +242,7 @@ export default function Home() {
                   <div className="result">
                     <div className="result-check" aria-hidden>✓</div>
                     <h2>Conversão concluída</h2>
-                    <p>{desktop ? <>O MP4 foi <strong>salvo automaticamente no disco</strong>.</> : <>O MP4 está pronto para <strong>baixar</strong>.</>}</p>
+                    <p>{mode === "internal" ? <>O MP4 foi <strong>convertido pela Vercel</strong> e está pronto para baixar.</> : <>O MP4 está pronto para <strong>baixar</strong>.</>}</p>
                     <div className="conversion-summary conversion-summary-final">
                       <span><strong>Tamanho original</strong>{formatSize(input.sizeBytes)}</span>
                       <span><strong>Tamanho final</strong>{formatSize(result.outputBytes)}</span>
@@ -222,18 +258,11 @@ export default function Home() {
                     <video className="preview preview-final" src={result.previewUrl} controls playsInline preload="metadata" />
                   </div>
 
-                  {desktop ? (
-                    <>
-                      <div className="status status-info"><span><strong>Salvo em:</strong> {result.outputPath}</span></div>
-                      <button className="btn btn-primary" onClick={reset}>Converter outro vídeo</button>
-                    </>
-                  ) : (
-                    <>
-                      <button className="btn btn-primary" onClick={() => downloadWebResult(result)}>Baixar vídeo</button>
-                      <p className="hint">O download é feito pelo próprio navegador, sem enviar o vídeo para servidor.</p>
-                      <button className="btn btn-plain" onClick={reset}>Converter outro vídeo</button>
-                    </>
-                  )}
+                  <>
+                    <button className="btn btn-primary" onClick={() => downloadWebResult(result)}>Baixar vídeo</button>
+                    <p className="hint">{mode === "internal" ? "O MP4 foi armazenado temporariamente na Vercel e o download usa um link privado com validade limitada." : "O download é feito pelo próprio navegador, sem enviar o vídeo para servidor."}</p>
+                    <button className="btn btn-plain" onClick={reset}>Converter outro vídeo</button>
+                  </>
                 </>
               )}
 
@@ -248,18 +277,20 @@ export default function Home() {
         <section className="howto" aria-label="Como usar">
           <details><summary>Como funciona</summary>
             <ol>
-              <li>O vídeo permanece no seu dispositivo.</li>
-              <li>No Desktop/Tauri, o aplicativo usa FFmpeg nativo.</li>
-              <li>No navegador, usa FFmpeg.wasm otimizado para o ambiente web.</li>
+              <li>Em “Usando recurso do aparelho”, o vídeo permanece no seu dispositivo.</li>
+              <li>Em “Interno (Vercel)”, o vídeo é enviado temporariamente para a Vercel.</li>
+              <li>O modo local usa FFmpeg.wasm; o modo Interno usa FFmpeg nativo no servidor.</li>
               <li>A saída usa H.264 High, Level 4.0, 1080p, yuv420p, 30 fps e AAC 192 kbps.</li>
-              <li>No Desktop você escolhe onde salvar; na Web você baixa pelo navegador.</li>
+              <li>Nos dois modos, a saída final é sempre MP4.</li>
             </ol>
           </details>
         </section>
 
-        <p className="privacy"><strong>Privacidade:</strong> o vídeo não é enviado para nenhum servidor.</p>
-        <footer className="footer">Conversor de Vídeo TV 1080p · {desktop ? "Desktop nativo" : "Web local"}</footer>
+        <p className="privacy"><strong>Privacidade:</strong> {mode === "internal" ? "no modo Interno, o vídeo é enviado temporariamente para a infraestrutura da Vercel para conversão." : "no modo usando recurso do aparelho, o vídeo não é enviado para nenhum servidor."}</p>
+        <footer className="footer">Conversor de Vídeo TV 1080p · {mode === "internal" ? "Vercel interno" : "Web local"}</footer>
       </div>
     </main>
   );
 }
+
+[executed on device: souza-rios (5724ac53-4934-454d-a273-72ca3821a2a1)]
