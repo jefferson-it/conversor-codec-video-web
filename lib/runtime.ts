@@ -1,4 +1,3 @@
-[Reading 237 lines from start (total: 237 lines, 0 remaining)]
 
 "use client";
 
@@ -238,4 +237,3 @@ export function downloadWebResult(result: RuntimeResult): void {
   anchor.remove();
 }
 
-[executed on device: souza-rios (5724ac53-4934-454d-a273-72ca3821a2a1)]
