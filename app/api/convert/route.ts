@@ -113,6 +113,12 @@ export async function POST(request: Request) {
       const candidate = await get(pathname, {
         access: "private",
         useCache: false,
+        ...(process.env.BLOB_READ_WRITE_TOKEN
+          ? { token: process.env.BLOB_READ_WRITE_TOKEN }
+          : {}),
+        ...(process.env.BLOB_STORE_ID
+          ? { storeId: process.env.BLOB_STORE_ID }
+          : {}),
       });
 
       if (candidate?.statusCode === 200) {
