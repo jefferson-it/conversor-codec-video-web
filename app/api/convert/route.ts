@@ -1,5 +1,5 @@
 
-import { issueSignedToken, presignUrl, put, del } from "@vercel/blob";
+import { get, put, del, issueSignedToken, presignUrl } from "@vercel/blob";
 import { createReadStream, createWriteStream } from "node:fs";
 import { mkdir, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -105,43 +105,26 @@ export async function POST(request: Request) {
       return Response.json({ error: "Arquivo de entrada inválido." }, { status: 400 });
     }
 
-    // O navegador fez o upload por uma URL PUT assinada. Para ler um Blob
-    // privado de forma determinística, gere aqui uma URL GET assinada e baixe
-    // o objeto diretamente do storage. Isso evita depender de uma consulta
-    // autenticada ao índice do Blob logo após o upload.
-    let sourceResponse: Response | null = null;
-    let lastSourceStatus: number | null = null;
+    // O upload já foi concluído. Para Blob privado, leia o objeto diretamente
+    // pelo SDK no servidor, usando a autenticação do projeto.
+    let sourceResponse: Awaited<ReturnType<typeof get>> = null;
 
     for (let attempt = 0; attempt < 6 && !sourceResponse; attempt += 1) {
-      const token = await issueSignedToken({
-        pathname,
-        operations: ["get"],
-        validUntil: Date.now() + 5 * 60 * 1000,
-      });
-      const { presignedUrl } = await presignUrl(token, {
-        pathname,
-        operation: "get",
+      const candidate = await get(pathname, {
         access: "private",
         useCache: false,
-        validUntil: Date.now() + 5 * 60 * 1000,
       });
 
-      const candidate = await fetch(presignedUrl, {
-        cache: "no-store",
-      });
-
-      lastSourceStatus = candidate.status;
-
-      if (candidate.ok) {
+      if (candidate?.statusCode === 200) {
         sourceResponse = candidate;
       } else if (attempt < 5) {
         await new Promise((resolve) => setTimeout(resolve, 1000));
       }
     }
 
-    if (!sourceResponse?.body) {
+    if (!sourceResponse?.stream) {
       return Response.json(
-        { error: `Vídeo enviado não pôde ser lido pelo armazenamento (HTTP ${lastSourceStatus ?? "desconhecido"}).` },
+        { error: "Vídeo enviado não pôde ser lido pelo armazenamento após o upload." },
         { status: 404 },
       );
     }
@@ -153,7 +136,7 @@ export async function POST(request: Request) {
     const outputPath = join(tempDir, "saida_TV1080P.mp4");
 
     await pipeline(
-      Readable.fromWeb(sourceResponse.body as Parameters<typeof Readable.fromWeb>[0]),
+      Readable.fromWeb(sourceResponse.stream as Parameters<typeof Readable.fromWeb>[0]),
       createWriteStream(inputPath),
     );
 
