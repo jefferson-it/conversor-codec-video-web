@@ -123,14 +123,19 @@ export async function convertInputInternal(
 
   onProgress?.({ percent: 2, durationSeconds: durationSeconds ?? undefined, elapsedSeconds: 0 });
 
+  if (input.file.size > 4 * 1024 * 1024) {
+    throw new Error(
+      "O modo Interno (Vercel) aceita vídeos de até 4 MB. Para arquivos maiores, use o processamento no aparelho.",
+    );
+  }
+
   const uploadPreparationResponse = await fetch("/api/blob/upload", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      name: input.name,
-      contentType: input.file.type || "video/mp4",
-      sizeBytes: input.file.size,
-    }),
+    headers: {
+      "Content-Type": input.file.type || "video/mp4",
+      "X-File-Name": encodeURIComponent(input.name),
+    },
+    body: input.file,
   });
 
   if (!uploadPreparationResponse.ok) {
@@ -146,24 +151,10 @@ export async function convertInputInternal(
 
   const uploadTarget = (await uploadPreparationResponse.json()) as {
     pathname?: string;
-    presignedUrl?: string;
   };
 
-  if (!uploadTarget.pathname || !uploadTarget.presignedUrl) {
-    throw new Error("A Vercel não retornou uma URL de upload válida.");
-  }
-
-  const uploadResponse = await fetch(uploadTarget.presignedUrl, {
-    method: "PUT",
-    headers: { "Content-Type": input.file.type || "video/mp4" },
-    body: input.file,
-  });
-
-  if (!uploadResponse.ok) {
-    const detail = await uploadResponse.text().catch(() => "");
-    throw new Error(
-      detail || `Upload para o Vercel Blob falhou (HTTP ${uploadResponse.status}).`,
-    );
+  if (!uploadTarget.pathname) {
+    throw new Error("A Vercel não retornou o caminho do upload.");
   }
 
   onProgress?.({ percent: 10, durationSeconds: durationSeconds ?? undefined });
