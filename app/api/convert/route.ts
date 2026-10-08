@@ -110,7 +110,6 @@ export async function POST(request: Request) {
     // o objeto diretamente do storage. Isso evita depender de uma consulta
     // autenticada ao índice do Blob logo após o upload.
     let sourceResponse: Response | null = null;
-    let sourceUrl = "";
 
     for (let attempt = 0; attempt < 6 && !sourceResponse; attempt += 1) {
       const token = await issueSignedToken({
@@ -131,7 +130,6 @@ export async function POST(request: Request) {
 
       if (candidate.ok) {
         sourceResponse = candidate;
-        sourceUrl = presignedUrl;
       } else if (attempt < 5) {
         await new Promise((resolve) => setTimeout(resolve, 1000));
       }
