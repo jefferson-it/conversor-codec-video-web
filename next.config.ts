@@ -13,6 +13,9 @@ const nextConfig: NextConfig = {
   // Turbopack não resolve o `new Worker(new URL(...))` dinâmico do
   // @ffmpeg/ffmpeg — o webpack trata esse padrão corretamente.
   reactStrictMode: true,
+  outputFileTracingIncludes: {
+    "/api/convert": ["./node_modules/ffmpeg-static/ffmpeg"],
+  },
   async headers() {
     return [
       {
