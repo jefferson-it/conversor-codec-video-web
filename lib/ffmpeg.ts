@@ -128,8 +128,22 @@ export function isPageIsolated(): boolean {
   }
 }
 
+function isIOSWebKit(): boolean {
+  try {
+    const ua = navigator.userAgent;
+    const platform = navigator.platform;
+    const touchMac = platform === "MacIntel" && navigator.maxTouchPoints > 1;
+    return /iPad|iPhone|iPod/.test(ua) || touchMac;
+  } catch {
+    return false;
+  }
+}
+
 function supportsMT(): boolean {
-  return isPageIsolated();
+  // Safari/iOS é deliberadamente mantido em single-thread: mesmo quando
+  // SharedArrayBuffer/crossOriginIsolated aparece disponível, o custo de
+  // memória e as limitações do WebKit tornam o core-mt menos previsível.
+  return !isIOSWebKit() && isPageIsolated();
 }
 
 /** `?motor=st` na URL força single-thread (útil se o MT travar na máquina). */
@@ -145,6 +159,16 @@ function mtForcedOff(): boolean {
 function workfsDisabled(): boolean {
   try {
     return new URLSearchParams(window.location.search).get("io") === "memfs";
+  } catch {
+    return false;
+  }
+}
+
+function forceWorkFS(): boolean {
+  try {
+    // No iPhone/iPad, não copiar o vídeo inteiro para o MEMFS. Isso reduz
+    // drasticamente o pico de memória antes/depois do encode.
+    return isIOSWebKit() && !workfsDisabled();
   } catch {
     return false;
   }
@@ -484,7 +508,8 @@ export async function convertVideoForTV1080p(
         : 0;
     const prefersMemfs = deviceMemory >= 8 || (deviceMemory === 0 && file.size <= WORKERFS_LIMIT);
     const useWorkFS =
-      !workfsDisabled() && file.size > WORKERFS_LIMIT && !prefersMemfs;
+      !workfsDisabled() &&
+      (forceWorkFS() || (file.size > WORKERFS_LIMIT && !prefersMemfs));
     if (useWorkFS) {
       try {
         try {
@@ -495,7 +520,11 @@ export async function convertVideoForTV1080p(
         const ok = await ffmpeg.mount(WORKERFS, { files: [file] }, MOUNT_POINT);
         if (ok) {
           mounted = true;
-          callbacks.onLog?.("entrada: leitura sob demanda (workfs)");
+          callbacks.onLog?.(
+            forceWorkFS()
+              ? "entrada: iOS/Safari — leitura sob demanda (workfs)"
+              : "entrada: leitura sob demanda (workfs)",
+          );
           return `${MOUNT_POINT}/${file.name}`;
         }
         callbacks.onLog?.("entrada: workfs recusado, usando cópia local (memfs)");
@@ -614,16 +643,39 @@ export async function convertVideoForTV1080p(
     }
 
     callbacks.onProgress?.(98);
+
+    // O encode acabou, mas a entrada ainda ocupa memória no FS virtual.
+    // Libere-a antes de materializar o MP4 final para evitar pico de RAM.
+    if (mounted) {
+      try {
+        await ffmpeg.unmount(MOUNT_POINT);
+      } catch {
+        /* ignora */
+      }
+      mounted = false;
+    }
+    if (writtenInput) {
+      try {
+        await ffmpeg.deleteFile(writtenInput);
+      } catch {
+        /* ignora */
+      }
+      writtenInput = null;
+    }
+
     const out = await ffmpeg.readFile(outputName);
-    // readFile() já devolve um Uint8Array próprio vindo do worker. Não faça
-    // uma segunda cópia do MP4: em vídeos grandes isso duplica temporariamente
-    // centenas de MB de RAM e pode provocar pressão de memória no navegador.
     const bytes =
       typeof out === "string" ? new TextEncoder().encode(out) : out;
+
+    // O MP4 já está no Uint8Array retornado pelo worker; remova a cópia do
+    // FS virtual imediatamente, antes de criar o Blob final.
+    try {
+      await ffmpeg.deleteFile(outputName);
+    } catch {
+      /* ignora */
+    }
+
     callbacks.onProgress?.(99);
-    // TypeScript 5.9 modela Uint8Array como ArrayBufferLike, enquanto a API
-    // Blob exige ArrayBuffer. O cast só ajusta o tipo; não cria uma segunda
-    // cópia como o caminho anterior com new Uint8Array(...).
     return new Blob([bytes as unknown as BlobPart], { type: "video/mp4" });
   } finally {
     ffmpeg.off("progress", handleProgress);
