@@ -8,7 +8,9 @@ export type { RuntimeInput, RuntimeProgress, RuntimeResult };
 export type Runtime = "desktop" | "web";
 
 export function getRuntime(): Runtime { return "web"; }
-export function runtimeLabel(): string { return "FFmpeg.wasm"; }
+export function runtimeLabel(): string {
+  return "FFmpeg.wasm · processamento local no navegador";
+}
 
 export async function pickInput(): Promise<RuntimeInput | null> {
   return new Promise((resolve) => {
@@ -78,9 +80,16 @@ export async function convertInput(
       if (bitrate && currentSeconds != null) estimatedMegabytes = Number(bitrate) * 1000 * currentSeconds / 8 / (1024 * 1024);
       if (fps || currentSeconds != null || bitrate) {
         const elapsedSeconds = (performance.now() - startedAt) / 1000;
-        const speed = durationSeconds && elapsedSeconds > 0 ? durationSeconds / elapsedSeconds : undefined;
+        const speed =
+          currentSeconds != null && elapsedSeconds > 0
+            ? currentSeconds / elapsedSeconds
+            : undefined;
+        const percent =
+          currentSeconds != null && durationSeconds
+            ? Math.min(97, Math.max(2, Math.round(currentSeconds / durationSeconds * 100)))
+            : 2;
         onProgress?.({
-          percent: currentSeconds != null && durationSeconds ? Math.min(97, Math.round(currentSeconds / durationSeconds * 100)) : 0,
+          percent,
           fps,
           speed,
           currentSeconds,
