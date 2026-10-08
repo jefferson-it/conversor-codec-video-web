@@ -1,0 +1,14 @@
+{
+  "name":"Conversor de Vídeo TV 1080p",
+  "short_name":"Conversor TV 1080p",
+  "description":"Converta vídeos para MP4 compatível com TV 1080p.",
+  "start_url":"/",
+  "scope":"/",
+  "display":"standalone",
+  "orientation":"any",
+  "background_color":"#f2f2f7",
+  "theme_color":"#007aff",
+  "icons":[
+    {"src":"/favicon.svg","sizes":"64x64","type":"image/svg+xml","purpose":"any maskable"}
+  ]
+}
