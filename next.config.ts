@@ -14,7 +14,7 @@ const nextConfig: NextConfig = {
   // @ffmpeg/ffmpeg — o webpack trata esse padrão corretamente.
   reactStrictMode: true,
   outputFileTracingIncludes: {
-    "/api/convert": ["./node_modules/ffmpeg-static/ffmpeg"],
+    "/api/convert": ["./node_modules/ffmpeg-static/**/*"],
   },
   async headers() {
     return [
