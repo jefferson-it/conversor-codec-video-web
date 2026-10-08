@@ -105,9 +105,23 @@ export async function POST(request: Request) {
       return Response.json({ error: "Arquivo de entrada inválido." }, { status: 400 });
     }
 
-    const source = await get(pathname, { access: "private", useCache: false });
+    let source: Awaited<ReturnType<typeof get>> = null;
+
+    // A gravação por URL assinada vai direto do navegador para o Blob.
+    // Faça algumas tentativas antes de declarar o objeto ausente, para cobrir
+    // uma eventual latência momentânea entre a escrita e a leitura.
+    for (let attempt = 0; attempt < 6 && !source; attempt += 1) {
+      source = await get(pathname, { access: "private", useCache: false });
+      if (!source && attempt < 5) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+    }
+
     if (!source) {
-      return Response.json({ error: "Vídeo enviado não foi encontrado no armazenamento." }, { status: 404 });
+      return Response.json(
+        { error: "Vídeo enviado não foi encontrado no armazenamento após aguardar a sincronização." },
+        { status: 404 },
+      );
     }
 
     tempDir = join(tmpdir(), `video-converter-${randomUUID()}`);
@@ -194,7 +208,7 @@ export async function POST(request: Request) {
     });
     await writer.close();
 
-    await del(pathname).catch(() => undefined);
+    await del(pathname, { access: "private" }).catch(() => undefined);
 
     return await responsePromise;
   } catch (error) {
