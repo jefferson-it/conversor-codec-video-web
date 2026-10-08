@@ -1,4 +1,3 @@
-[Reading 207 lines from start (total: 207 lines, 0 remaining)]
 
 import { get, issueSignedToken, presignUrl, put, del } from "@vercel/blob";
 import { createReadStream, createWriteStream } from "node:fs";
@@ -208,4 +207,3 @@ export async function POST(request: Request) {
   }
 }
 
-[executed on device: souza-rios (5724ac53-4934-454d-a273-72ca3821a2a1)]
