@@ -3,7 +3,6 @@
 
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 
-export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
