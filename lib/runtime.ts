@@ -166,7 +166,7 @@ export async function convertInputInternal(
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      pathname: uploaded.pathname,
+      pathname: uploadTarget.pathname,
       name: input.name,
       durationSeconds,
     }),
