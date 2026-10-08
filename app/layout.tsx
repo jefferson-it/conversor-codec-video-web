@@ -8,6 +8,7 @@ export const metadata: Metadata = {
   applicationName: "Conversor de Vídeo TV 1080p",
   keywords: ["conversor de vídeo", "tv1080p", "roku", "p40vik", "mp4", "ffmpeg"],
   authors: [{ name: "Conversor de Vídeo TV 1080p" }],
+  manifest: "/manifest.webmanifest",
   icons: {
     icon: "/favicon.svg",
   },
