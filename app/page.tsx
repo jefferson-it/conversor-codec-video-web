@@ -55,8 +55,18 @@ export default function Home() {
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  const [showIosInstall, setShowIosInstall] = useState(false);
 
   useEffect(() => setRuntime(getRuntime()), []);
+
+  useEffect(() => {
+    const userAgent = navigator.userAgent || "";
+    const isIOS = /iPhone|iPad|iPod/i.test(userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    const isStandalone = window.matchMedia("(display-mode: standalone)").matches ||
+      (navigator as Navigator & { standalone?: boolean }).standalone === true;
+    setShowIosInstall(isIOS && !isStandalone);
+  }, []);
 
   useEffect(() => {
     if (phase !== "working" || startedAt == null) return;
@@ -169,6 +179,23 @@ export default function Home() {
           <h1>Conversor de Vídeo</h1>
           <p className="hero-sub">Conversão local para TV 1080p. O próprio aplicativo escolhe o melhor motor para onde está rodando.</p>
         </header>
+
+        {showIosInstall && (
+          <section className="ios-install-card" aria-label="Instalar no iPhone ou iPad">
+            <div className="ios-install-badge" aria-hidden>📱</div>
+            <div className="ios-install-copy">
+              <p className="ios-install-eyebrow">Experiência de app</p>
+              <h2>Tenha o conversor na Tela de Início</h2>
+              <p>Adicione este site ao seu iPhone ou iPad e abra o conversor direto pela Tela de Início, em uma janela própria, como um aplicativo.</p>
+            </div>
+            <div className="ios-install-steps">
+              <div className="ios-install-step"><span className="ios-install-number">1</span><span>Toque em <strong>Compartilhar</strong> no Safari <span className="ios-share-symbol" aria-hidden>↑</span></span></div>
+              <div className="ios-install-step"><span className="ios-install-number">2</span><span>Escolha <strong>Adicionar à Tela de Início</strong></span></div>
+              <div className="ios-install-step"><span className="ios-install-number">3</span><span>Toque em <strong>Adicionar</strong></span></div>
+            </div>
+            <div className="ios-install-footnote">Depois, o conversor abre sem a barra do Safari.</div>
+          </section>
+        )}
 
         <section className="card" aria-label="Conversor de vídeo">
           {phase === "idle" && (
